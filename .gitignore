@@ -1,0 +1,13 @@
+# Your real portfolio - never upload
+data/my_*.csv
+
+# Python / Jupyter clutter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Mac system files
+.DS_Store
+
+# Excel temporary lock files
+~$*.xlsx

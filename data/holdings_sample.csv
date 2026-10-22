@@ -1,0 +1,16 @@
+ticker,sector,shares,amount_try,buy_price,buy_date
+THYAO,Transport,,60000,,2024-01-03
+PGSUS,Transport,,30000,,2024-01-03
+ASELS,Defence,,50000,,2024-01-03
+TUPRS,Energy,,50000,,2024-01-03
+KCHOL,Holding,,60000,,2024-01-03
+SAHOL,Holding,,40000,,2024-01-03
+GARAN,Banking,,50000,,2024-01-03
+AKBNK,Banking,,40000,,2024-01-03
+YKBNK,Banking,,30000,,2024-03-01
+BIMAS,Retail,,50000,,2024-01-03
+MGROS,Retail,,30000,,2024-06-03
+EREGL,Materials,,40000,,2024-01-03
+SISE,Materials,,30000,,2024-09-02
+FROTO,Automotive,,40000,,2024-01-03
+TCELL,Telecom,,40000,,2025-01-02

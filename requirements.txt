@@ -1,0 +1,11 @@
+pandas>=2.0
+numpy>=1.24
+matplotlib>=3.7
+openpyxl>=3.1
+yfinance>=0.2.40
+borsapy>=0.11      # backup source: TradingView / doviz.com (needs Python 3.10+)
+isyatirimhisse>=5.0  # backup source: Is Yatirim website
+truststore>=0.9   # use the Mac/Windows certificate store for HTTPS
+statsmodels>=0.14
+scipy>=1.10
+jupyter
