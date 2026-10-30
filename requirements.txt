@@ -9,3 +9,4 @@ truststore>=0.9   # use the Mac/Windows certificate store for HTTPS
 statsmodels>=0.14
 scipy>=1.10
 jupyter
+exchange_calendars>=4.5   # Borsa Istanbul trading calendar (holidays, half days)

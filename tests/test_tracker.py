@@ -64,3 +64,26 @@ def test_full_report_runs_offline():
     assert -1 < metrics["Total return"] < 10
     table = tr.holdings_table(holdings, prices)
     assert np.isclose(table["weight"].sum(), 1)
+
+
+def test_rate_decisions_map_to_the_next_open_session():
+    """Weekend -> Monday; holiday -> first session after it; normal day -> same day."""
+    out = econ.align_to_sessions(["2024-03-21", "2024-03-23", "2024-04-11"]).set_index("announced")
+    assert out.loc["2024-03-21", "day0_session"] == pd.Timestamp("2024-03-21")   # Thursday, open
+    assert out.loc["2024-03-23", "day0_session"] == pd.Timestamp("2024-03-25")   # Saturday -> Monday
+    assert out.loc["2024-04-11", "day0_session"] > pd.Timestamp("2024-04-11")    # Ramazan Bayrami
+
+
+def test_placebo_finds_a_planted_event_but_not_noise():
+    """Random returns with a +3% jump on 10 'event' days: the placebo p-value is tiny.
+    Without the jump the same dates look like any other day."""
+    rng = np.random.default_rng(0)
+    days = pd.bdate_range("2020-01-01", periods=1200)
+    noise = pd.Series(rng.normal(0, 0.01, len(days)), index=days)
+    events = days[300:1100:80]
+    jumped = noise.copy()
+    jumped[events] += 0.03
+    hit = econ.placebo_car(jumped, None, events, window=(0, 0), n_draws=200, model="constant")
+    calm = econ.placebo_car(noise, None, events, window=(0, 0), n_draws=200, model="constant")
+    assert hit["empirical p-value"] < 0.01
+    assert calm["empirical p-value"] > 0.05

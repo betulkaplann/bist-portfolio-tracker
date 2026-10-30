@@ -316,3 +316,77 @@ def car_test(ar, window):
     car = ar.loc[:, window[0]:window[1]].sum(axis=1)
     t = car.mean() / (car.std(ddof=1) / np.sqrt(len(car))) if len(car) > 1 else np.nan
     return car, car.mean(), t
+
+
+# ---------------------------------------------------------------------------
+# Event dates on the Borsa Istanbul calendar, and a placebo test
+# ---------------------------------------------------------------------------
+def align_to_sessions(event_dates, announce_time="14:00"):
+    """Map each TCMB decision to the first Borsa Istanbul session that could react.
+
+    The Monetary Policy Committee announces at 14:00 Istanbul time.
+      * Normal trading day: the market is open at 14:00, so day 0 = that day.
+      * Half day (e.g. the eve of a holiday, closing 12:30): the market is
+        already closed, so day 0 = the next session.
+      * Holiday or weekend: day 0 = the next session.
+    Uses the official exchange calendar "XIST" from the exchange_calendars
+    package. Without it, falls back to plain weekdays (holidays ignored).
+    Returns a DataFrame: announcement date, day-0 session, and whether it moved.
+    """
+    rows = []
+    try:
+        import exchange_calendars as xc
+        cal = xc.get_calendar("XIST")
+        for date in pd.to_datetime(event_dates):
+            announce = pd.Timestamp(f"{date.date()} {announce_time}", tz="Europe/Istanbul")
+            if cal.is_session(date) and announce < cal.session_close(date):
+                session = date                                    # market still open
+            else:
+                session = cal.date_to_session(date, direction="next")
+                if session == date:                               # half day, already closed
+                    session = cal.next_session(date)
+            rows.append((date, session.tz_localize(None)))
+        source = "XIST exchange calendar"
+    except ImportError:
+        for date in pd.to_datetime(event_dates):
+            rows.append((date, date + pd.offsets.BDay(0)))        # weekend -> Monday
+        source = "weekdays only (install exchange_calendars for holidays)"
+    out = pd.DataFrame(rows, columns=["announced", "day0_session"])
+    out["moved"] = out["announced"] != out["day0_session"]
+    out.attrs["source"] = source
+    return out
+
+
+def placebo_car(returns, market, event_dates, window=(0, 1), n_draws=1000, exclude_days=10,
+                model="market", seed=1, **kwargs):
+    """Is the average CAR around real events unusual compared with random days?
+
+    1. Draw as many random trading days as there are real events, avoiding
+       +/- `exclude_days` around any real event.
+    2. Compute the average CAR on those fake dates, exactly as for the real ones.
+    3. Repeat n_draws times. The empirical p-value is the share of draws whose
+       average CAR is at least as large (in absolute value) as the real one.
+    This needs no normality assumption, unlike the t-test in car_test.
+    """
+    rng = np.random.default_rng(seed)
+    days = returns.dropna().index
+    real_ar = event_returns(returns, market, event_dates, model=model, **kwargs)
+    _, real_mean, _ = car_test(real_ar, window)
+
+    # Candidate placebo days: not close to any real event, with enough history
+    pos_real = days.searchsorted(pd.to_datetime(event_dates))
+    blocked = np.zeros(len(days), dtype=bool)
+    for p in pos_real:
+        blocked[max(p - exclude_days, 0): p + exclude_days + 1] = True
+    candidates = days[~blocked][160:-15]               # room for the estimation window
+
+    k = len(real_ar)
+    draws = []
+    for _ in range(n_draws):
+        fake = rng.choice(candidates, size=k, replace=False)
+        ar = event_returns(returns, market, fake, model=model, **kwargs)
+        draws.append(car_test(ar, window)[1])
+    draws = pd.Series(draws)
+    p_value = (draws.abs() >= abs(real_mean)).mean()
+    return {"real mean CAR": real_mean, "placebo draws": draws,
+            "empirical p-value": p_value, "events": k}

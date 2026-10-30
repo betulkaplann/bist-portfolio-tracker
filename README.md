@@ -8,9 +8,20 @@ A Python project on a 15-stock Borsa Istanbul (BIST) portfolio across 8 sectors,
    - **CAPM** regressions with Newey-West standard errors and the Security Market Line
    - **Markowitz** efficient frontier, with an **out-of-sample test** against the 1/N portfolio
    - **Dividends:** price vs total return, and the benchmark bias of comparing with a price index
-   - **Event study** of TCMB policy-rate decisions: BIST 100, bank stocks and USD/TRY
+   - **Event study** of TCMB policy-rate decisions: BIST 100, bank stocks and USD/TRY, with event dates on the Borsa Istanbul trading calendar and a **placebo test** on random dates
 
 I built it as an MSc student in Applied Economics & Data Analysis (JIBS), combining my FP&A background with econometrics and Python.
+
+## What is simulated and what is real
+| Part | Status | Details |
+|---|---|---|
+| Stock prices, BIST 100, USD/TRY | **Real** | Downloaded live (Yahoo Finance, borsapy, İş Yatırım) when you run the notebooks |
+| CPI inflation and TCMB policy rate | **Real** | From the central bank via borsapy |
+| Exchange holidays and half days | **Real** | Official Borsa Istanbul calendar (`exchange_calendars`, code XIST) |
+| Portfolio positions | **Example** | 15 example holdings in `data/holdings_sample.csv`, not real investments |
+| `sample_prices.csv`, `sample_macro.csv` | **Simulated** | Used only when there is no internet (`OFFLINE = True`) and by the tests |
+
+Results in the notebooks come from live data. Each run prints which source was used, and says clearly when it falls back to simulated data.
 
 ## Research questions
 - Did Turkish equities protect purchasing power, in real TRY and in USD terms?
@@ -39,7 +50,7 @@ bist-portfolio-tracker/
 ├── bist_tracker.ipynb        # part 1: portfolio tracker (start here)
 ├── bist_economics.ipynb      # part 2: inflation, CAPM, Markowitz
 ├── tracker.py                # prices, returns, risk metrics, Excel report
-├── econ.py                   # CPI/policy rate, real returns, CAPM, frontier, dividends, event study
+├── econ.py                   # CPI/policy rate, real returns, CAPM, frontier, dividends, event study, trading calendar, placebo test
 ├── run_report.py             # builds the full report with one command
 ├── make_sample_prices.py     # creates simulated prices for offline testing
 ├── tests/                    # automated checks (pytest)
@@ -88,6 +99,8 @@ Choose the order with `python run_report.py --sources borsapy,yahoo`.
 | Efficient frontier | min w'Σw s.t. w'μ = target, Σw = 1, 0 ≤ w ≤ 25% |
 | Dividend contribution | annualised total return (adjusted close) − annualised price return |
 | Event study | AR = r − (a + b·r_m), estimated on days −150 to −11; CAR over days 0 to +1 |
+| Event day 0 | First Borsa Istanbul session open at or after the 14:00 announcement (holidays and half days from the XIST calendar) |
+| Placebo test | Average CAR on 500 sets of random non-event days; empirical p-value = share at least as large as the real one |
 
 ## Limitations and next steps
 - The tracker uses dividend-adjusted stock prices but the BIST 100 is a price index, so its excess return is flattered by roughly the dividend yield (quantified in part 2)
